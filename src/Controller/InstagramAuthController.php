@@ -124,9 +124,7 @@ class InstagramAuthController extends ControllerBase {
     $this->instagramManager->setClient($instagram);
 
     // Generates the URL where the user will be redirected for Instagram login.
-    // If the user did not have email permission granted on previous attempt,
-    // we use the re-request URL requesting only the email address.
-    $instagram_login_url = $this->instagramManager->getInstagramLoginUrl();
+    $instagram_login_url = $this->instagramManager->getLoginUrl();
 
     $state = $this->instagramManager->getState();
 
@@ -141,7 +139,8 @@ class InstagramAuthController extends ControllerBase {
    * Instagram returns the user here after user has authenticated in Instagram.
    */
   public function callback() {
-    // Checks if user cancel login via Instagram.
+
+    // Checks if user cancel login.
     $error = $this->request->getCurrentRequest()->get('error');
     if ($error == 'access_denied') {
       drupal_set_message($this->t('You could not be authenticated.'), 'error');
@@ -167,10 +166,10 @@ class InstagramAuthController extends ControllerBase {
       return $this->redirect('user.login');
     }
 
+    $this->instagramManager->setClient($instagram)->authenticate();
+
     // Saves access token to session.
     $this->dataHandler->set('access_token', $this->instagramManager->getAccessToken());
-
-    $this->instagramManager->setClient($instagram)->authenticate();
 
     // Gets user's info from Instagram API.
     /* @var \League\OAuth2\Client\Provider\InstagramResourceOwner $instagram_profile */
@@ -179,22 +178,28 @@ class InstagramAuthController extends ControllerBase {
       return $this->redirect('user.login');
     }
 
-    // Store the data mapped with data points define is
-    // social_auth_instagram settings.
+    // Store the data mapped with data points define in settings.
     $data = [];
 
     if (!$this->userManager->checkIfUserExists($instagram_profile->getId())) {
-      $api_calls = explode(PHP_EOL, $this->instagramManager->getAPICalls());
+      $api_calls = explode(PHP_EOL, $this->instagramManager->getApiCalls());
 
-      // Iterate through api calls define in settings and try to retrieve them.
-      foreach ($api_calls as $api_call) {
-        $call = $this->instagramManager->getExtraDetails($api_call, $instagram_profile->getId());
-        array_push($data, $call);
+      if ($api_calls) {
+        // Iterate through api calls define in settings and retrieve them.
+        foreach ($api_calls as $api_call) {
+          $call['api_call'] = $this->instagramManager->getExtraDetails($api_call);
+          array_push($data, $call);
+        }
+
+        $data = json_encode($data);
+      }
+      else {
+        $data = NULL;
       }
     }
 
     // If user information could be retrieved.
-    return $this->userManager->authenticateUser($instagram_profile->getName(), '', $instagram_profile->getId(), $this->instagramManager->getAccessToken(), $instagram_profile->getImageurl(), json_encode($data));
+    return $this->userManager->authenticateUser($instagram_profile->getName(), '', $instagram_profile->getId(), $this->instagramManager->getAccessToken(), $instagram_profile->getImageurl(), $data);
 
   }
 

@@ -4,43 +4,11 @@ namespace Drupal\social_auth_instagram;
 
 use Drupal\social_auth\AuthManager\OAuth2Manager;
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Logger\LoggerChannelFactoryInterface;
-use Drupal\Core\Entity\EntityFieldManagerInterface;
-use Drupal\Core\Routing\UrlGeneratorInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
- * Contains all the logic for Instagram login integration.
+ * Contains all the logic for Instagram OAuth2 authentication.
  */
 class InstagramAuthManager extends OAuth2Manager {
-
-  /**
-   * The logger channel.
-   *
-   * @var \Drupal\Core\Logger\LoggerChannelFactoryInterface
-   */
-  protected $loggerFactory;
-
-  /**
-   * The event dispatcher.
-   *
-   * @var \Symfony\Component\EventDispatcher\EventDispatcherInterface
-   */
-  protected $eventDispatcher;
-
-  /**
-   * The entity field manager.
-   *
-   * @var \Drupal\Core\Entity\EntityFieldManagerInterface
-   */
-  protected $entityFieldManager;
-
-  /**
-   * The url generator.
-   *
-   * @var \Drupal\Core\Routing\UrlGeneratorInterface
-   */
-  protected $urlGenerator;
 
   /**
    * The Instagram client object.
@@ -48,19 +16,20 @@ class InstagramAuthManager extends OAuth2Manager {
    * @var \League\OAuth2\Client\Provider\Instagram
    */
   protected $client;
-  /**
-   * The Instagram access token.
-   *
-   * @var \League\OAuth2\Client\Token\AccessToken
-   */
-  protected $token;
 
   /**
    * The Instagram user.
    *
-   * @var \League\OAuth2\Client\Provider\InstagramUser
+   * @var \League\OAuth2\Client\Provider\InstagramResourceOwner
    */
   protected $user;
+
+  /**
+   * Social Auth Instagram Settings.
+   *
+   * @var \Drupal\Core\Config\ImmutableConfig
+   */
+  protected $settings;
 
   /**
    * The data point to be collected.
@@ -70,84 +39,55 @@ class InstagramAuthManager extends OAuth2Manager {
   protected $scopes;
 
   /**
-   * Social Auth Instagram Settings.
-   *
-   * @var array
-   */
-  protected $settings;
-
-
-  /**
    * Constructor.
    *
-   * @param \Drupal\Core\Logger\LoggerChannelFactoryInterface $logger_factory
-   *   Used for logging errors.
-   * @param \Symfony\Component\EventDispatcher\EventDispatcherInterface $event_dispatcher
-   *   Used for dispatching events to other modules.
-   * @param \Drupal\Core\Entity\EntityFieldManagerInterface $entity_field_manager
-   *   Used for accessing Drupal user picture preferences.
-   * @param \Drupal\Core\Routing\UrlGeneratorInterface $url_generator
-   *   Used for generating absoulute URLs.
    * @param \Drupal\Core\Config\ConfigFactory $configFactory
    *   Used for accessing configuration object factory.
    */
-  public function __construct(LoggerChannelFactoryInterface $logger_factory, EventDispatcherInterface $event_dispatcher, EntityFieldManagerInterface $entity_field_manager, UrlGeneratorInterface $url_generator, ConfigFactory $configFactory) {
-    $this->loggerFactory      = $logger_factory;
-    $this->eventDispatcher    = $event_dispatcher;
-    $this->entityFieldManager = $entity_field_manager;
-    $this->urlGenerator       = $url_generator;
-    $this->config             = $configFactory->getEditable('social_auth_instagram.settings');
+  public function __construct(ConfigFactory $configFactory) {
+    $this->settings = $configFactory->getEditable('social_auth_instagram.settings');
   }
 
   /**
    * Authenticates the users by using the access token.
-   *
-   * @return $this
-   *   The current object.
    */
   public function authenticate() {
-    $this->token = $this->client->getAccessToken('authorization_code',
-      ['code' => $_GET['code']]);
+    $this->setAccessToken($this->client->getAccessToken('authorization_code',
+      ['code' => $_GET['code']]));
   }
 
   /**
    * Gets the data by using the access token returned.
    *
-   * @return League\OAuth2\Client\Provider\InstagramUser
+   * @return \League\OAuth2\Client\Provider\InstagramResourceOwner
    *   User info returned by the Instagram.
    */
   public function getUserInfo() {
-    $this->user = $this->client->getResourceOwner($this->token);
+    if (!$this->user) {
+      $this->user = $this->client->getResourceOwner($this->getAccessToken());
+    }
+
     return $this->user;
   }
 
   /**
    * Gets the data by using the access token returned.
    *
+   * @param string $path
+   *   The path to be requested.
+   *
    * @return string
    *   Data returned by Making API Call.
    */
-  public function getExtraDetails($url, $user_id) {
-    if($url) {
-      $baseUrl = 'https://api.instagram.com/v1';
-      $params  = 'access_token=' . $this->token;
+  public function getExtraDetails($path) {
 
-      //Replacing user_id with numerical user_id
-      $url = str_replace('user_id',$user_id,$url);
+    $url = $this->client->getHost() . '/v1' . trim($path);
 
-      $response = file_get_contents($baseUrl . $url . '/?' . $params);
-      return json_decode($response, TRUE);
-    }
-  }
+    $request = $this->client->getAuthenticatedRequest('GET', $url, $this->getAccessToken());
 
-  /**
-   * Returns token generated after authorization.
-   *
-   * @return string
-   *   Used for making API calls.
-   */
-  public function getAccessToken() {
-    return $this->token;
+    $response = $this->client->getResponse($request);
+
+    return $response->getBody()->getContents();
   }
 
   /**
@@ -156,50 +96,40 @@ class InstagramAuthManager extends OAuth2Manager {
    * @return string
    *   Absolute Instagram login URL where user will be redirected
    */
-  public function getInstagramLoginUrl() {
+  public function getLoginUrl() {
     $scopes = ['basic'];
 
-    $instagram_scopes = explode(PHP_EOL, $this->getScopes());
-    foreach ($instagram_scopes as $scope) {
-      array_push($scopes, $scope);
+    $instagram_scopes = $this->getScopes();
+    if ($instagram_scopes) {
+      $scopes += explode(',', $this->getScopes());
     }
 
-    if ($this->getScopes()) {
-      $options = [
-        'scope' => $scopes,
-      ];
-      $login_url = $this->client->getAuthorizationUrl($options);
-    }
-    else {
-      $login_url = $this->client->getAuthorizationUrl();
-    }
+    $options = [
+      'scope' => $scopes,
+    ];
 
-    // Generate and return the URL where we should redirect the user.
-    return $login_url;
+    return $this->client->getAuthorizationUrl($options);
   }
 
   /**
-   * Returns the Instagram login URL where user will be redirected.
+   * Returns OAuth2 state.
    *
    * @return string
-   *   Absolute Instagram login URL where user will be redirected
+   *   The OAuth2 state.
    */
   public function getState() {
-    $state = $this->client->getState();
-
-    // Generate and return the URL where we should redirect the user.
-    return $state;
+    return $this->client->getState();
   }
 
   /**
-   * Gets the data Point defined the settings form page.
+   * Gets the scopes defined in the settings form.
    *
    * @return string
-   *   Data points separtated by comma.
+   *   Data points separated by comma.
    */
   public function getScopes() {
     if (!$this->scopes) {
-      $this->scopes = $this->config->get('scopes');
+      $this->scopes = $this->settings->get('scopes');
     }
     return $this->scopes;
   }
@@ -208,10 +138,10 @@ class InstagramAuthManager extends OAuth2Manager {
    * Gets the API calls to collect data.
    *
    * @return string
-   *   API calls separtated by comma.
+   *   API calls.
    */
-  public function getAPICalls() {
-    return $this->config->get('api_calls');
+  public function getApiCalls() {
+    return $this->settings->get('api_calls');
   }
 
 }
