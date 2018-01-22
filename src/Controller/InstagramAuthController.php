@@ -187,7 +187,7 @@ class InstagramAuthController extends ControllerBase {
       if ($api_calls) {
         // Iterate through api calls define in settings and retrieve them.
         foreach ($api_calls as $api_call) {
-          $call['api_call'] = $this->instagramManager->getExtraDetails($api_call);
+          $call[$api_call] = $this->instagramManager->getExtraDetails($api_call);
           array_push($data, $call);
         }
 
