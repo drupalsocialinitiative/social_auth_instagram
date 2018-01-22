@@ -25,14 +25,14 @@ class InstagramAuthManager extends OAuth2Manager {
   protected $user;
 
   /**
-   * Social Auth Instagram Settings.
+   * Social Auth Instagram settings.
    *
    * @var \Drupal\Core\Config\ImmutableConfig
    */
   protected $settings;
 
   /**
-   * The data point to be collected.
+   * The scopes to be requested.
    *
    * @var string
    */
@@ -42,7 +42,7 @@ class InstagramAuthManager extends OAuth2Manager {
    * Constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactory $configFactory
-   *   Used for accessing configuration object factory.
+   *   Used for accessing Social Auth Instagram settings.
    */
   public function __construct(ConfigFactory $configFactory) {
     $this->settings = $configFactory->getEditable('social_auth_instagram.settings');
@@ -60,7 +60,7 @@ class InstagramAuthManager extends OAuth2Manager {
    * Gets the data by using the access token returned.
    *
    * @return \League\OAuth2\Client\Provider\InstagramResourceOwner
-   *   User info returned by the Instagram.
+   *   User info returned by Instagram.
    */
   public function getUserInfo() {
     if (!$this->user) {
@@ -71,13 +71,13 @@ class InstagramAuthManager extends OAuth2Manager {
   }
 
   /**
-   * Gets the data by using the access token returned.
+   * Request data from an endpoint.
    *
    * @param string $path
    *   The path to be requested.
    *
    * @return string
-   *   Data returned by Making API Call.
+   *   Data returned by API call.
    */
   public function getExtraDetails($path) {
 
@@ -91,12 +91,12 @@ class InstagramAuthManager extends OAuth2Manager {
   }
 
   /**
-   * Returns the Instagram login URL where user will be redirected.
+   * Returns the Instagram authorization URL where user will be redirected.
    *
    * @return string
-   *   Absolute Instagram login URL where user will be redirected
+   *   Absolute Instagram authorization URL.
    */
-  public function getLoginUrl() {
+  public function getAuthorizationUrl() {
     $scopes = ['basic'];
 
     $instagram_scopes = $this->getScopes();
@@ -135,10 +135,10 @@ class InstagramAuthManager extends OAuth2Manager {
   }
 
   /**
-   * Gets the API calls to collect data.
+   * Gets the API endpoints to be requested.
    *
    * @return string
-   *   API calls.
+   *   API endpoints separated in different lines.
    */
   public function getApiCalls() {
     return $this->settings->get('api_calls');

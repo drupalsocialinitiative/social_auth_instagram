@@ -124,7 +124,7 @@ class InstagramAuthController extends ControllerBase {
     $this->instagramManager->setClient($instagram);
 
     // Generates the URL where the user will be redirected for Instagram login.
-    $instagram_login_url = $this->instagramManager->getLoginUrl();
+    $instagram_login_url = $this->instagramManager->getAuthorizationUrl();
 
     $state = $this->instagramManager->getState();
 
