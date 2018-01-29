@@ -178,25 +178,7 @@ class InstagramAuthController extends ControllerBase {
       return $this->redirect('user.login');
     }
 
-    // Store the data mapped with data points define in settings.
-    $data = [];
-
-    if (!$this->userManager->checkIfUserExists($instagram_profile->getId())) {
-      $api_calls = explode(PHP_EOL, $this->instagramManager->getApiCalls());
-
-      if ($api_calls) {
-        // Iterate through api calls define in settings and retrieve them.
-        foreach ($api_calls as $api_call) {
-          $call[$api_call] = $this->instagramManager->getExtraDetails($api_call);
-          array_push($data, $call);
-        }
-
-        $data = json_encode($data);
-      }
-      else {
-        $data = NULL;
-      }
-    }
+    $data = $this->userManager->checkIfUserExists($instagram_profile->getId()) ? NULL : $this->instagramManager->getExtraDetails();
 
     // If user information could be retrieved.
     return $this->userManager->authenticateUser($instagram_profile->getName(), '', $instagram_profile->getId(), $this->instagramManager->getAccessToken(), $instagram_profile->getImageurl(), $data);

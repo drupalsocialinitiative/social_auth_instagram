@@ -107,26 +107,30 @@ class InstagramAuthSettingsForm extends SocialAuthSettingsForm {
       '#default_value' => $GLOBALS['base_url'] . '/user/login/instagram/callback',
     ];
 
-    $form['instagram_settings']['authorized_javascript_origin'] = [
-      '#type' => 'textfield',
-      '#disabled' => TRUE,
-      '#title' => $this->t('Authorized Javascript Origin'),
-      '#description' => $this->t('Copy this value to <em>Authorized Javascript Origins</em> field of your Instagram App settings.'),
-      '#default_value' => $this->requestContext->getHost(),
+    $form['instagram_settings']['advanced'] = [
+      '#type' => 'details',
+      '#title' => $this->t('Advanced settings'),
+      '#open' => FALSE,
     ];
 
-    $form['instagram_settings']['scopes'] = [
+    $form['instagram_settings']['advanced']['scopes'] = [
       '#type' => 'textarea',
-      '#title' => $this->t('Scopes for API call'),
+      '#title' => $this->t('Scopes'),
       '#default_value' => $config->get('scopes'),
-      '#description' => $this->t('Define the requested scopes to make API calls.'),
+      '#description' => $this->t('Define any additional scopes to be requested, separated by a comma (e.g.: comments,likes).<br>
+                                  The scope \'basic\' is added by default and always requested.<br>
+                                  You can see the full list of valid scopes and their description <a href="@scopes">here</a>.', ['@scopes' => 'https://www.instagram.com/developer/authorization/']),
     ];
 
-    $form['instagram_settings']['api_calls'] = [
+    $form['instagram_settings']['advanced']['endpoints'] = [
       '#type' => 'textarea',
-      '#title' => $this->t('API calls to be made to collect data'),
-      '#default_value' => $config->get('api_calls'),
-      '#description' => $this->t('Define the API calls which will retrieve data from provider.'),
+      '#title' => $this->t('Endpoints'),
+      '#default_value' => $config->get('endpoints'),
+      '#description' => $this->t('Define the Endpoints to be requested when user authenticates with Instagram for the first time<br>
+                                  Enter each endpoint in different lines in the format <em>endpoint</em>|<em>name_of_endpoint</em>.<br>
+                                  <b>For instance:</b><br>
+                                  /users/self/media/recent|media_recent<br>
+                                  /users/self/media/liked|media_liked'),
     ];
 
     return parent::buildForm($form, $form_state);
@@ -141,7 +145,7 @@ class InstagramAuthSettingsForm extends SocialAuthSettingsForm {
       ->set('client_id', $values['client_id'])
       ->set('client_secret', $values['client_secret'])
       ->set('scopes', $values['scopes'])
-      ->set('api_calls', $values['api_calls'])
+      ->set('endpoints', $values['endpoints'])
       ->save();
 
     parent::submitForm($form, $form_state);

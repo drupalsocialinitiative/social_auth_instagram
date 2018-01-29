@@ -11,45 +11,17 @@ use Drupal\Core\Config\ConfigFactory;
 class InstagramAuthManager extends OAuth2Manager {
 
   /**
-   * The Instagram client object.
-   *
-   * @var \League\OAuth2\Client\Provider\Instagram
-   */
-  protected $client;
-
-  /**
-   * The Instagram user.
-   *
-   * @var \League\OAuth2\Client\Provider\InstagramResourceOwner
-   */
-  protected $user;
-
-  /**
-   * Social Auth Instagram settings.
-   *
-   * @var \Drupal\Core\Config\ImmutableConfig
-   */
-  protected $settings;
-
-  /**
-   * The scopes to be requested.
-   *
-   * @var string
-   */
-  protected $scopes;
-
-  /**
    * Constructor.
    *
    * @param \Drupal\Core\Config\ConfigFactory $configFactory
    *   Used for accessing Social Auth Instagram settings.
    */
   public function __construct(ConfigFactory $configFactory) {
-    $this->settings = $configFactory->getEditable('social_auth_instagram.settings');
+    parent::__construct($configFactory->get('social_auth_instagram.settings'));
   }
 
   /**
-   * Authenticates the users by using the access token.
+   * {@inheritdoc}
    */
   public function authenticate() {
     $this->setAccessToken($this->client->getAccessToken('authorization_code',
@@ -57,10 +29,7 @@ class InstagramAuthManager extends OAuth2Manager {
   }
 
   /**
-   * Gets the data by using the access token returned.
-   *
-   * @return \League\OAuth2\Client\Provider\InstagramResourceOwner
-   *   User info returned by Instagram.
+   * {@inheritdoc}
    */
   public function getUserInfo() {
     if (!$this->user) {
@@ -71,30 +40,7 @@ class InstagramAuthManager extends OAuth2Manager {
   }
 
   /**
-   * Request data from an endpoint.
-   *
-   * @param string $path
-   *   The path to be requested.
-   *
-   * @return string
-   *   Data returned by API call.
-   */
-  public function getExtraDetails($path) {
-
-    $url = $this->client->getHost() . '/v1' . trim($path);
-
-    $request = $this->client->getAuthenticatedRequest('GET', $url, $this->getAccessToken());
-
-    $response = $this->client->getResponse($request);
-
-    return $response->getBody()->getContents();
-  }
-
-  /**
-   * Returns the Instagram authorization URL where user will be redirected.
-   *
-   * @return string
-   *   Absolute Instagram authorization URL.
+   * {@inheritdoc}
    */
   public function getAuthorizationUrl() {
     $scopes = ['basic'];
@@ -112,36 +58,47 @@ class InstagramAuthManager extends OAuth2Manager {
   }
 
   /**
-   * Returns OAuth2 state.
-   *
-   * @return string
-   *   The OAuth2 state.
+   * {@inheritdoc}
+   */
+  public function getExtraDetails() {
+    $endpoints = $this->getEndPoints();
+
+    // Store the data mapped with endpoints define in settings.
+    $data = [];
+
+    if ($endpoints) {
+      // Iterate through api calls define in settings and retrieve them.
+      foreach (explode(PHP_EOL, $endpoints) as $endpoint) {
+        // Endpoint is set as path/to/endpoint|name.
+        $parts = explode('|', $endpoint);
+        $call[$parts[1]] = $this->requestEndPoint($parts[0]);
+        array_push($data, $call);
+      }
+
+      return json_encode($data);
+    }
+
+    return NULL;
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function requestEndPoint($path) {
+    $url = $this->client->getHost() . '/v1' . trim($path);
+
+    $request = $this->client->getAuthenticatedRequest('GET', $url, $this->getAccessToken());
+
+    $response = $this->client->getResponse($request);
+
+    return $response->getBody()->getContents();
+  }
+
+  /**
+   * {@inheritdoc}
    */
   public function getState() {
     return $this->client->getState();
-  }
-
-  /**
-   * Gets the scopes defined in the settings form.
-   *
-   * @return string
-   *   Data points separated by comma.
-   */
-  public function getScopes() {
-    if (!$this->scopes) {
-      $this->scopes = $this->settings->get('scopes');
-    }
-    return $this->scopes;
-  }
-
-  /**
-   * Gets the API endpoints to be requested.
-   *
-   * @return string
-   *   API endpoints separated in different lines.
-   */
-  public function getApiCalls() {
-    return $this->settings->get('api_calls');
   }
 
 }
