@@ -46,8 +46,11 @@ class InstagramAuthManager extends OAuth2Manager {
     $scopes = ['basic'];
 
     $instagram_scopes = $this->getScopes();
-    if ($instagram_scopes) {
-      $scopes += explode(',', $this->getScopes());
+    if (strpos($instagram_scopes, ',')) {
+      $scopes = array_merge($scopes, explode(',', $instagram_scopes));
+    }
+    else {
+      $scopes[] = $instagram_scopes;
     }
 
     $options = [
