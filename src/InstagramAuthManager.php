@@ -53,35 +53,9 @@ class InstagramAuthManager extends OAuth2Manager {
       $scopes[] = $instagram_scopes;
     }
 
-    $options = [
+    return $this->client->getAuthorizationUrl([
       'scope' => $scopes,
-    ];
-
-    return $this->client->getAuthorizationUrl($options);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function getExtraDetails() {
-    $endpoints = $this->getEndPoints();
-
-    // Store the data mapped with endpoints define in settings.
-    $data = [];
-
-    if ($endpoints) {
-      // Iterate through api calls define in settings and retrieve them.
-      foreach (explode(PHP_EOL, $endpoints) as $endpoint) {
-        // Endpoint is set as path/to/endpoint|name.
-        $parts = explode('|', $endpoint);
-        $call[$parts[1]] = $this->requestEndPoint($parts[0]);
-        array_push($data, $call);
-      }
-
-      return json_encode($data);
-    }
-
-    return NULL;
+    ]);
   }
 
   /**
