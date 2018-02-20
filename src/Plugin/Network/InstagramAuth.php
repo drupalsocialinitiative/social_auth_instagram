@@ -17,7 +17,7 @@ use Drupal\Core\Site\Settings;
 /**
  * Defines a Network Plugin for Social Auth Instagram.
  *
- * @package Drupal\simple_instagram_connect\Plugin\Network
+ * @package Drupal\social_auth_instagram\Plugin\Network
  *
  * @Network(
  *   id = "social_auth_instagram",
