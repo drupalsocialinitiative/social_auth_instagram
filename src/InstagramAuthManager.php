@@ -45,12 +45,14 @@ class InstagramAuthManager extends OAuth2Manager {
   public function getAuthorizationUrl() {
     $scopes = ['basic'];
 
-    $instagram_scopes = $this->getScopes();
-    if (strpos($instagram_scopes, ',')) {
-      $scopes = array_merge($scopes, explode(',', $instagram_scopes));
-    }
-    else {
-      $scopes[] = $instagram_scopes;
+    $extra_scopes = $this->getScopes();
+    if ($extra_scopes) {
+      if (strpos($extra_scopes, ',')) {
+        $scopes = array_merge($scopes, explode(',', $extra_scopes));
+      }
+      else {
+        $scopes[] = $extra_scopes;
+      }
     }
 
     return $this->client->getAuthorizationUrl([

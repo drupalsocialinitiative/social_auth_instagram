@@ -1,7 +1,7 @@
 social_auth_instagram.redirect_to_instagram:
   path: 'user/login/instagram'
   defaults:
-    _controller: '\Drupal\social_auth_instagram\Controller\InstagramAuthController::redirectToInstagram'
+    _controller: '\Drupal\social_auth_instagram\Controller\InstagramAuthController::redirectToProvider'
   requirements:
     # Anonymous users can log in, but authenticated users can also associate a new provider
     _access: 'TRUE'
