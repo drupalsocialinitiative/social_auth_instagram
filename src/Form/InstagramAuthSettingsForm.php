@@ -88,8 +88,7 @@ class InstagramAuthSettingsForm extends SocialAuthSettingsForm {
       '#description' => $this->t('Define the Endpoints to be requested when user authenticates with Instagram for the first time<br>
                                   Enter each endpoint in different lines in the format <em>endpoint</em>|<em>name_of_endpoint</em>.<br>
                                   <b>For instance:</b><br>
-                                  /users/self/media/recent|media_recent<br>
-                                  /users/self/media/liked|media_liked'),
+                                  /v1/users/self/media/recent|media_recent'),
     ];
 
     return parent::buildForm($form, $form_state);
