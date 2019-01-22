@@ -68,14 +68,14 @@ class InstagramAuthManager extends OAuth2Manager {
   /**
    * {@inheritdoc}
    */
-  public function requestEndPoint($method, $path, $domain = NULL) {
+  public function requestEndPoint($method, $path, $domain = NULL, array $options = []) {
     if (!$domain) {
       $domain = $this->client->getHost();
     }
 
     $url = $domain . trim($path);
 
-    $request = $this->client->getAuthenticatedRequest($method, $url, $this->getAccessToken());
+    $request = $this->client->getAuthenticatedRequest($method, $url, $this->getAccessToken(), $options);
 
     try {
       return $this->client->getParsedResponse($request);
