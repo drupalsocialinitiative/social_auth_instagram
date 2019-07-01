@@ -14,15 +14,15 @@ use League\OAuth2\Client\Provider\Instagram;
  * @package Drupal\social_auth_instagram\Plugin\Network
  *
  * @Network(
- *   id = "social_auth_instagram",
- *   social_network = "Instagram",
- *   type = "social_auth",
- *   handlers = {
- *     "settings": {
- *       "class": "\Drupal\social_auth_instagram\Settings\InstagramAuthSettings",
- *       "config_id": "social_auth_instagram.settings"
- *     }
- *   }
+ *  id = "social_auth_instagram",
+ *  social_network = "Instagram",
+ *  type = "social_auth",
+ *  handlers = {
+ *   "settings": {
+ *    "class": "\Drupal\social_auth_instagram\Settings\InstagramAuthSettings",
+ *    "config_id": "social_auth_instagram.settings"
+ *    }
+ *  }
  * )
  */
 class InstagramAuth extends NetworkBase implements InstagramAuthInterface {
@@ -33,7 +33,7 @@ class InstagramAuth extends NetworkBase implements InstagramAuthInterface {
    * @return \League\OAuth2\Client\Provider\Instagram|false
    *   The initialized 3rd party library instance.
    *
-   * @throws SocialApiException
+   * @throws \Drupal\social_api\SocialApiException
    *   If the SDK library does not exist.
    */
   protected function initSdk() {
